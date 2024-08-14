@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.coroutines.CoroutineContext
@@ -24,6 +25,23 @@ internal class LeverManager(
 
     override val coroutineContext: CoroutineContext by lazy {
         SupervisorJob() + Dispatchers.Default
+    }
+
+    init {
+        this.launch {
+            withContext(Dispatchers.IO) {
+                repository.getData().collectLatest {
+                    reentrantLock.lock()
+
+                    try {
+                        cache.update(it)
+                        allExperimentalInfo = it.exp ?: emptyList()
+                    } finally {
+                        reentrantLock.unlock()
+                    }
+                }
+            }
+        }
     }
 
     private val reentrantLock: ReentrantLock by lazy { ReentrantLock() }
@@ -41,17 +59,6 @@ internal class LeverManager(
     }
 
     override suspend fun refresh() {
-        withContext(Dispatchers.IO) {
-            repository.getData().collectLatest {
-                reentrantLock.lock()
 
-                try {
-                    cache.update(it)
-                    allExperimentalInfo = it.exp ?: emptyList()
-                } finally {
-                    reentrantLock.unlock()
-                }
-            }
-        }
     }
 }

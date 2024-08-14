@@ -7,11 +7,7 @@ import kotlinx.coroutines.flow.flow
 /**
  * Remote Data Source connects with API work
  */
-internal class RemoteDataSource {
+internal interface RemoteDataSource {
     //todo add retrofit api
-    internal suspend fun getData(): Flow<RemoteConfig> {
-        return flow {
-
-        }
-    }
+    suspend fun getData(): RemoteConfig // Result<RemoteConfig>
 }
